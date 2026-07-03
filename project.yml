@@ -1,0 +1,184 @@
+name: BatteryMonitor
+options:
+  minimumXcodeGenVersion: 2.41.0
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    APP_SHORTCUTS_ENABLE_FLEXIBLE_MATCHING: "NO"
+    ENABLE_APPINTENTS_DEPLOYMENT_AWARE_PROCESSING: "NO"
+    ENABLE_ASSISTANT_INTENTS_PROVIDER_VALIDATION: "NO"
+    LM_COMPILE_TIME_EXTRACTION: "NO"
+    LM_ENABLE_LINK_GENERATION: "NO"
+    LM_NO_APP_SHORTCUT_LOCALIZATION: "YES"
+    SWIFT_ENABLE_EMIT_CONST_VALUES: "NO"
+    SWIFT_EMIT_CONST_VALUE_PROTOCOLS: ""
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0.0"
+    # Required for notarization (Developer ID distribution).
+    ENABLE_HARDENED_RUNTIME: "YES"
+  configs:
+    Debug:
+      CODE_SIGNING_ALLOWED: "NO"
+      CODE_SIGNING_REQUIRED: "NO"
+      CODE_SIGN_IDENTITY: ""
+    Release:
+      CODE_SIGNING_ALLOWED: "NO"
+      CODE_SIGNING_REQUIRED: "NO"
+      CODE_SIGN_IDENTITY: ""
+configs:
+  Debug: debug
+  Release: release
+targets:
+  BatteryMonitorShared:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor.shared
+        GENERATE_INFOPLIST_FILE: "YES"
+        APPLICATION_EXTENSION_API_ONLY: "YES"
+  BatteryMonitorCore:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorCore
+    dependencies:
+      - target: BatteryMonitorShared
+      - sdk: CoreBluetooth.framework
+      - sdk: IOBluetooth.framework
+      - sdk: IOKit.framework
+      - sdk: ServiceManagement.framework
+      - sdk: UserNotifications.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor.core
+        GENERATE_INFOPLIST_FILE: "YES"
+  BatteryMonitor:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorApp
+      - path: Resources/App/Assets.xcassets
+    dependencies:
+      - target: BatteryMonitorShared
+        embed: true
+      - target: BatteryMonitorCore
+        embed: true
+      - sdk: AppKit.framework
+      - sdk: ServiceManagement.framework
+      - sdk: SwiftUI.framework
+      - sdk: UserNotifications.framework
+      - sdk: WidgetKit.framework
+      - target: BatteryMonitorWidget
+        embed: true
+    info:
+      path: Resources/App/Info.plist
+      properties:
+        LSUIElement: true
+        NSBluetoothAlwaysUsageDescription: Battery Monitor reads connected Bluetooth peripheral battery levels for low-battery alerts.
+    entitlements:
+      path: Config/BatteryMonitor.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - N4828PE57J.com.lacdon.batterymonitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_LSUIElement: "YES"
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Battery Monitor reads connected Bluetooth peripheral battery levels for low-battery alerts.
+  BatteryMonitorWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorWidget
+    dependencies:
+      - target: BatteryMonitorShared
+      - sdk: SwiftUI.framework
+      - sdk: WidgetKit.framework
+    info:
+      path: Resources/Widget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Config/BatteryMonitorWidget.entitlements
+      properties:
+        # WidgetKit appexes on macOS must be sandboxed or pluginkit never registers them.
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - N4828PE57J.com.lacdon.batterymonitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor.widget
+        APPLICATION_EXTENSION_API_ONLY: "YES"
+        SKIP_INSTALL: "YES"
+  BatteryMonitorCLI:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorCLI
+    dependencies:
+      - target: BatteryMonitorCore
+      - target: BatteryMonitorShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor.cli
+        SKIP_INSTALL: "YES"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(BUILT_PRODUCTS_DIR)"
+          - "@executable_path/../Frameworks"
+  BatteryMonitorTestHarness:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/BatteryMonitorTestHarness
+    dependencies:
+      - target: BatteryMonitorCore
+      - target: BatteryMonitorShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lacdon.batterymonitor.tests
+        SKIP_INSTALL: "YES"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(BUILT_PRODUCTS_DIR)"
+          - "@executable_path/../Frameworks"
+schemes:
+  BatteryMonitor:
+    build:
+      targets:
+        BatteryMonitor: all
+        BatteryMonitorWidget: all
+        BatteryMonitorShared: all
+        BatteryMonitorCore: all
+        BatteryMonitorCLI: all
+        BatteryMonitorTestHarness: all
+    run:
+      config: Debug
+      executable: BatteryMonitor
+    archive:
+      config: Release
+  BatteryMonitorCLI:
+    build:
+      targets:
+        BatteryMonitorCLI: all
+    run:
+      config: Debug
+      executable: BatteryMonitorCLI
+  BatteryMonitorTestHarness:
+    build:
+      targets:
+        BatteryMonitorTestHarness: all
+    run:
+      config: Debug
+      executable: BatteryMonitorTestHarness

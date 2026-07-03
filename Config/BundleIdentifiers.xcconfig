@@ -1,0 +1,4 @@
+PRODUCT_BUNDLE_IDENTIFIER = com.lacdon.batterymonitor
+BATTERY_MONITOR_WIDGET_BUNDLE_IDENTIFIER = com.lacdon.batterymonitor.widget
+BATTERY_MONITOR_APP_GROUP_IDENTIFIER = group.com.lacdon.batterymonitor
+MACOSX_DEPLOYMENT_TARGET = 14.0
